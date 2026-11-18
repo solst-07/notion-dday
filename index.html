@@ -6,7 +6,6 @@
     <style>
         :root {
             --header-bg: #CBE0F8;
-            --body-bg: #EBF3FC;
             --text-color: #333333;
             --sub-text: #666666;
             --border-color: #B0D0F5;
@@ -14,11 +13,11 @@
             --input-bg: #FFFFFF;
         }
 
-        body.theme-blue { --header-bg: #CBE0F8; --body-bg: #EBF3FC; --border-color: #B0D0F5; }
-        body.theme-sage { --header-bg: #D4E2D4; --body-bg: #F0F4F0; --border-color: #B8D0B8; }
-        body.theme-beige { --header-bg: #EEDCC5; --body-bg: #F9F5F0; --border-color: #DDC2A3; }
-        body.theme-lavender { --header-bg: #E2D9F3; --body-bg: #F4F0F9; --border-color: #C8B8E8; }
-        body.theme-mono { --header-bg: #E0E0E0; --body-bg: #F5F5F5; --border-color: #CCCCCC; }
+        body.theme-blue { --header-bg: #CBE0F8; --border-color: #B0D0F5; }
+        body.theme-sage { --header-bg: #D4E2D4; --border-color: #B8D0B8; }
+        body.theme-beige { --header-bg: #EEDCC5; --border-color: #DDC2A3; }
+        body.theme-lavender { --header-bg: #E2D9F3; --border-color: #C8B8E8; }
+        body.theme-mono { --header-bg: #E0E0E0; --border-color: #CCCCCC; }
 
         * {
             box-sizing: border-box;
@@ -29,9 +28,9 @@
         }
 
         body {
-            background-color: var(--body-bg);
+            background-color: transparent; /* 배경 투명화 (노션과 일체화) */
             color: var(--text-color);
-            padding: 8px;
+            padding: 4px;
             font-size: 13px;
             display: flex;
             flex-direction: column;
@@ -42,8 +41,7 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1;
-            border: 1px solid var(--border-color);
-            background-color: var(--body-bg);
+            background-color: transparent;
         }
 
         .header {
@@ -64,11 +62,10 @@
         }
 
         .content {
-            padding: 8px;
+            padding: 6px 0;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex-grow: 1;
         }
 
         .exam-card {
@@ -132,22 +129,34 @@
         }
         .delete-btn:hover { color: #D9534F; }
 
-        /* 항상 노출되는 입력 박스 섹션 */
-        .add-section {
-            padding: 0 8px 8px 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        /* 토글 형태의 과목 추가 버튼 */
+        .add-toggle-btn {
+            background-color: var(--card-bg);
+            border: 1px dashed var(--border-color);
+            color: var(--sub-text);
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 6px;
+        }
+        .add-toggle-btn:hover {
+            background-color: var(--header-bg);
+            color: var(--text-color);
         }
 
+        /* 평소에는 숨겨져 있다가 버튼을 누르면 나타나는 입력 폼 */
         .add-form {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 8px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 6px;
+            margin-top: 6px;
         }
+        .add-form.active { display: flex; }
 
         .add-form input {
             width: 100%;
@@ -159,23 +168,30 @@
         }
         .add-form input:focus { border-color: #666; }
 
+        .add-form-btns {
+            display: flex;
+            gap: 4px;
+        }
+
         .add-form button {
-            width: 100%;
-            padding: 7px;
+            flex: 1;
+            padding: 6px;
             border: 1px solid var(--border-color);
             background-color: var(--header-bg);
             font-weight: 600;
             cursor: pointer;
             font-size: 12px;
         }
-        .add-form button:hover { opacity: 0.9; }
+        .add-form button.cancel-btn {
+            background-color: #f1f1f1;
+            color: #555;
+        }
 
         .footer {
-            padding: 6px 8px;
+            padding: 6px 0;
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            border-top: 1px solid var(--border-color);
             margin-top: auto;
         }
 
@@ -227,13 +243,18 @@
 
         <div class="content" id="examList"></div>
 
-        <!-- 토글 없이 바로 입력할 수 있도록 변경한 입력 폼 -->
-        <div class="add-section">
-            <div class="add-form">
+        <!-- 하단 추가 버튼 및 토글 입력 폼 -->
+        <div>
+            <div class="add-toggle-btn" id="toggleFormBtn">+ 과목 추가하기</div>
+            
+            <div class="add-form" id="addForm">
                 <input type="text" id="inputTitle" placeholder="과목명 (예: 경영학 중간고사)">
                 <input type="date" id="inputDate">
                 <input type="text" id="inputMemo" placeholder="메모 (장소, 범위, 교시 등)">
-                <button id="saveBtn">+ 시험 추가하기</button>
+                <div class="add-form-btns">
+                    <button class="cancel-btn" id="cancelBtn">취소</button>
+                    <button id="saveBtn">저장</button>
+                </div>
             </div>
         </div>
 
@@ -254,22 +275,38 @@
     <script>
         let exams = [];
         try {
-            exams = JSON.parse(localStorage.getItem('notion_exams_v2') || '[]');
+            exams = JSON.parse(localStorage.getItem('notion_exams_v3') || '[]');
         } catch(e) {
             exams = [];
         }
 
-        let currentTheme = localStorage.getItem('notion_exam_theme_v2') || 'theme-blue';
+        let currentTheme = localStorage.getItem('notion_exam_theme_v3') || 'theme-blue';
         document.body.className = currentTheme;
 
         const examListEl = document.getElementById('examList');
+        const toggleFormBtn = document.getElementById('toggleFormBtn');
+        const addForm = document.getElementById('addForm');
         const inputTitle = document.getElementById('inputTitle');
         const inputDate = document.getElementById('inputDate');
         const inputMemo = document.getElementById('inputMemo');
         const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
         
         const paletteBtn = document.getElementById('paletteBtn');
         const palettePopup = document.getElementById('palettePopup');
+
+        // 추가 버튼 누르면 입력창 열고 닫기
+        toggleFormBtn.addEventListener('click', () => {
+            addForm.classList.toggle('active');
+            toggleFormBtn.style.display = addForm.classList.contains('active') ? 'none' : 'block';
+            if(addForm.classList.contains('active')) inputTitle.focus();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            addForm.classList.remove('active');
+            toggleFormBtn.style.display = 'block';
+            clearForm();
+        });
 
         paletteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -282,8 +319,14 @@
 
         function setTheme(theme) {
             document.body.className = theme;
-            localStorage.setItem('notion_exam_theme_v2', theme);
+            localStorage.setItem('notion_exam_theme_v3', theme);
             palettePopup.classList.remove('active');
+        }
+
+        function clearForm() {
+            inputTitle.value = '';
+            inputDate.value = '';
+            inputMemo.value = '';
         }
 
         function calculateDday(dateStr) {
@@ -359,20 +402,19 @@
 
             exams.push({ title, date, memo });
             try {
-                localStorage.setItem('notion_exams_v2', JSON.stringify(exams));
-            } catch(e) {
-                alert('저장 공간 오류가 발생했습니다.');
-            }
+                localStorage.setItem('notion_exams_v3', JSON.stringify(exams));
+            } catch(e) {}
             
-            inputTitle.value = '';
-            inputDate.value = '';
-            inputMemo.value = '';
+            clearForm();
+            // 저장 완료 후 입력창 닫기 및 추가 버튼 다시 표시
+            addForm.classList.remove('active');
+            toggleFormBtn.style.display = 'block';
             renderExams();
         });
 
         window.deleteExam = function(index) {
             exams.splice(index, 1);
-            localStorage.setItem('notion_exams_v2', JSON.stringify(exams));
+            localStorage.setItem('notion_exams_v3', JSON.stringify(exams));
             renderExams();
         }
 
@@ -390,7 +432,7 @@
                 date: newDate.trim() || exam.date, 
                 memo: newMemo.trim() 
             };
-            localStorage.setItem('notion_exams_v2', JSON.stringify(exams));
+            localStorage.setItem('notion_exams_v3', JSON.stringify(exams));
             renderExams();
         }
 
