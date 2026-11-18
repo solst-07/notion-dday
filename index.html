@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>노션 시험 디데이 위젯</title>
+  <!-- Tailwind CSS 로드 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 세리프(Georgia / Noto Serif KR) 및 본문(Pretendard) 폰트 로드 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <style>
+    /* 모든 요소 직각(0px) 통일 및 테마 변수 정의 */
+    * {
+      box-sizing: border-box;
+      border-radius: 0px !important;
+    }
+
+    :root {
+      /* 기본: 파스텔 블루 (TO DO 위젯 기본 컬러) */
+      --header-bg: #CBE0F8;
+      --body-bg: #EBF3FC;
+      --input-border: #CFD9E6;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-hover: #FFFFFF;
+      --badge-bg: #DCEBFA;
+      --badge-text: #274C77;
+      --text-main: #22252A;
+      --text-muted: #6C7582;
+    }
+
+    /* 2. 세이지 그린 */
+    [data-theme="sage"] {
+      --header-bg: #CBE4D3;
+      --body-bg: #EEF7F1;
+      --input-border: #C7DDD0;
+      --badge-bg: #D7EDE0;
+      --badge-text: #28543B;
+    }
+
+    /* 3. 웜 샌드 */
+    [data-theme="sand"] {
+      --header-bg: #EFE2CE;
+      --body-bg: #F9F4EC;
+      --input-border: #E0D3BF;
+      --badge-bg: #F2E6D3;
+      --badge-text: #685032;
+    }
+
+    /* 4. 라벤더 로즈 */
+    [data-theme="lavender"] {
+      --header-bg: #E5D4EC;
+      --body-bg: #F6F0F9;
+      --input-border: #DAC8E2;
+      --badge-bg: #ECE0F2;
+      --badge-text: #563766;
+    }
+
+    /* 5. 버터 옐로우 */
+    [data-theme="butter"] {
+      --header-bg: #F5E9BE;
+      --body-bg: #FCF8E8;
+      --input-border: #E6DAB0;
+      --badge-bg: #F7ECC8;
+      --badge-text: #6E5B1E;
+    }
+
+    /* 6. 미니멀 모노 */
+    [data-theme="mono"] {
+      --header-bg: #E2E4E8;
+      --body-bg: #F5F6F8;
+      --input-border: #D5D8DE;
+      --badge-bg: #E6E8EC;
+      --badge-text: #2F333A;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background-color: var(--body-bg);
+      color: var(--text-main);
+      transition: background-color 0.2s ease;
+    }
+
+    /* 헤더 타이틀 세리프 폰트 (좁은 열 맞춤 컴팩트 크기) */
+    .serif-title {
+      font-family: 'Georgia', 'Noto Serif KR', serif;
+      font-weight: 700;
+      font-size: 16.5px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: #22252A;
+    }
+
+    /* 커스텀 스크롤바 (얇은 수직 스크롤바) */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #666666;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #444444;
+    }
+
+    /* 날짜 입력창 아이콘 정렬 */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.65;
+      margin-left: 0;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="flex flex-col w-full h-screen overflow-x-hidden select-none">
+
+  <!-- 1. 컴팩트 상단 파스텔 헤더 배너 -->
+  <header
+    class="w-full h-[38px] shrink-0 flex items-center justify-between px-3 py-2 transition-colors duration-200"
+    style="background-color: var(--header-bg);"
+  >
+    <div class="flex items-baseline gap-1.5 min-w-0">
+      <h1 class="serif-title m-0">D-day</h1>
+      <span id="header-count" class="text-[11px] font-medium text-[#22252A]/60 tabular-nums truncate"></span>
+    </div>
+
+    <!-- 입력창 열기/닫기 직각 '+' 토글 버튼 -->
+    <button
+      id="toggle-form-btn"
+      type="button"
+      title="시험 추가 열기/닫기"
+      aria-label="시험 추가 열기/닫기"
+      aria-expanded="false"
+      class="w-[22px] h-[22px] shrink-0 bg-[#2C2A27] hover:bg-[#1E1D1B] active:bg-black text-white flex items-center justify-center border-none cursor-pointer transition-transform duration-150"
+    >
+      <svg id="toggle-form-icon" class="w-3.5 h-3.5 transition-transform duration-150" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="square" stroke-linejoin="miter" d="M12 5v14M5 12h14" />
+      </svg>
+    </button>
+  </header>
+
+  <!-- 2. 메인 바디 영역 -->
+  <main
+    class="flex-1 flex flex-col min-h-0 px-3 pt-2.5 pb-8 overflow-x-hidden transition-colors duration-200"
+    style="background-color: var(--body-bg);"
+  >
+    <!-- 접이식 세로 스택 입력 폼 ('+' 버튼 클릭 시 열림) -->
+    <form
+      id="exam-form"
+      class="hidden flex-col bg-white mb-2.5 shrink-0"
+      style="border: 1px solid var(--input-border);"
+    >
+      <!-- 1행: 과목명 -->
+      <input
+        id="subject-input"
+        type="text"
+        placeholder="과목명"
+        maxlength="40"
+        autocomplete="off"
+        class="w-full h-[31px] px-2.5 bg-transparent text-[12.5px] text-[#22252A] placeholder:text-[#9AA3AF] focus:outline-none"
+      />
+
+      <!-- 2행: 날짜 선택 + 직각 추가 버튼 -->
+      <div class="flex items-stretch border-t border-[#ECEFF4]">
+        <input
+          id="date-input"
+          type="date"
+          aria-label="시험 날짜 선택"
+          class="flex-1 min-w-0 h-[30px] px-2 bg-transparent text-[11.5px] text-[#22252A] focus:outline-none tabular-nums"
+        />
+        <button
+          type="submit"
+          title="추가"
+          class="px-2.5 shrink-0 bg-[#2C2A27] hover:bg-[#1E1D1B] active:bg-black text-white text-[11.5px] font-medium border-none cursor-pointer transition-colors"
+        >
+          추가
+        </button>
+      </div>
+
+      <!-- 3행: 메모 입력 -->
+      <div class="border-t border-[#ECEFF4]">
+        <input
+          id="memo-input"
+          type="text"
+          placeholder="메모 (장소, 범위 등)"
+          maxlength="80"
+          autocomplete="off"
+          class="w-full h-[29px] px-2.5 bg-transparent text-[11.5px] text-[#4B525C] placeholder:text-[#A3ACB8] focus:outline-none"
+        />
+      </div>
+    </form>
+
+    <!-- 인라인 알림 메시지 -->
+    <div
+      id="inline-notice"
+      class="hidden mb-2 px-2.5 py-1 bg-white text-[11px] text-[#D94848] border border-[#E6B8B8] shrink-0"
+    ></div>
+
+    <!-- 3. 스크롤 가능한 컴팩트 디데이 카드 리스트 -->
+    <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scroll pr-0.5">
+      <ul id="exam-list" class="list-none m-0 p-0">
+        <!-- JS로 직각 카드 동적 생성 -->
+      </ul>
+
+      <!-- 빈 상태 안내 -->
+      <div
+        id="empty-state"
+        class="hidden py-6 px-3 text-center bg-white/60 text-[11.5px] leading-relaxed text-[#7A828E]"
+      >
+        등록된 시험이 없습니다.<br />우측 상단 <b>+</b> 버튼으로 추가해 보세요.
+      </div>
+    </div>
+  </main>
+
+  <!-- 4. 우측 하단 컴팩트 팔레트 테마 스위처 (22x22px) -->
+  <div class="fixed bottom-[8px] right-[8px] z-30">
+    <!-- 테마 선택 팝오버 -->
+    <div
+      id="palette-popover"
+      class="hidden mb-1 p-1.5 bg-white border border-[#D5DCE4] shadow-sm w-[132px]"
+    >
+      <div class="text-[10.5px] font-semibold text-[#555B64] mb-1 px-0.5">테마 색상</div>
+      <div class="grid grid-cols-3 gap-1">
+        <button
+          type="button"
+          data-theme-option="blue"
+          title="파스텔 블루"
+          class="h-5 border border-[#B8CEE6] cursor-pointer flex items-center justify-center"
+          style="background-color: #CBE0F8;"
+        ></button>
+        <button
+          type="button"
+          data-theme-option="sage"
+          title="세이지 그린"
+          class="h-5 border border-[#B4D1BE] cursor-pointer flex items-center justify-center"
+          style="background-color: #CBE4D3;"
+        ></button>
+        <button
+          type="button"
+          data-theme-option="sand"
+          title="웜 샌드"
+          class="h-5 border border-[#DCD0BC] cursor-pointer flex items-center justify-center"
+          style="background-color: #EFE2CE;"
+        ></button>
+        <button
+          type="button"
+          data-theme-option="lavender"
+          title="라벤더 로즈"
+          class="h-5 border border-[#D3C0DC] cursor-pointer flex items-center justify-center"
+          style="background-color: #E5D4EC;"
+        ></button>
+        <button
+          type="button"
+          data-theme-option="butter"
+          title="버터 옐로우"
+          class="h-5 border border-[#E2D6AC] cursor-pointer flex items-center justify-center"
+          style="background-color: #F5E9BE;"
+        ></button>
+        <button
+          type="button"
+          data-theme-option="mono"
+          title="미니멀 모노"
+          class="h-5 border border-[#C8CCD2] cursor-pointer flex items-center justify-center"
+          style="background-color: #E2E4E8;"
+        ></button>
+      </div>
+    </div>
+
+    <!-- 팔레트 아이콘 직각 정사각 버튼 (22x22px) -->
+    <div class="flex justify-end">
+      <button
+        id="palette-toggle-btn"
+        type="button"
+        title="위젯 색상 변경"
+        aria-label="위젯 색상 변경"
+        class="w-[22px] h-[22px] bg-white border border-[#D5DCE4] hover:border-[#9AA3AF] flex items-center justify-center cursor-pointer transition-colors"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3C6.8 3 3 6.7 3 11.5C3 16.1 6.6 19.5 11.1 19.5C12.2 19.5 13 18.7 13 17.7C13 17.2 12.8 16.8 12.5 16.4C12.2 16.1 12.1 15.7 12.1 15.2C12.1 14.2 12.9 13.4 13.9 13.4H15.8C18.7 13.4 21 11.2 21 8.4C21 5.2 17 3 12 3Z" fill="#F6D5B8" stroke="#D4A373" stroke-width="1.3"/>
+          <circle cx="7.5" cy="10.5" r="1.4" fill="#F28482"/>
+          <circle cx="10.5" cy="7.2" r="1.4" fill="#F6BD60"/>
+          <circle cx="14.5" cy="7.5" r="1.4" fill="#84A59D"/>
+          <circle cx="17.2" cy="10.3" r="1.4" fill="#8ECAE6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * 노션 좁은 열(Memo 영역 등 250px 내외) 맞춤형 컴팩트 직각 D-day 위젯
+     * - 상단 '+' 토글로 열리고 닫히는 3단 세로 스택 입력창 (가로 넘침 방지)
+     * - 컴팩트 직각 카드 (상단: 디데이 뱃지 + 과목명 + 삭제 / 하단: 날짜 + 메모)
+     * - 과목명, 날짜, 메모 클릭 시 즉시 인라인 수정
+     */
+    (function () {
+      const STORAGE_KEY = 'notion_rect_dday_items_v2';
+      const THEME_KEY = 'notion_rect_dday_theme_v2';
+
+      const toggleFormBtn = document.getElementById('toggle-form-btn');
+      const toggleFormIcon = document.getElementById('toggle-form-icon');
+      const formEl = document.getElementById('exam-form');
+      const subjectInput = document.getElementById('subject-input');
+      const dateInput = document.getElementById('date-input');
+      const memoInput = document.getElementById('memo-input');
+      const noticeEl = document.getElementById('inline-notice');
+      const examListEl = document.getElementById('exam-list');
+      const emptyStateEl = document.getElementById('empty-state');
+      const headerCountEl = document.getElementById('header-count');
+
+      const paletteToggleBtn = document.getElementById('palette-toggle-btn');
+      const palettePopover = document.getElementById('palette-popover');
+      const themeOptionBtns = document.querySelectorAll('[data-theme-option]');
+
+      let exams = [];
+      let currentTheme = 'blue';
+      let noticeTimer = null;
+      let isFormOpen = false;
+
+      // 입력창 열기/닫기 제어
+      function setFormOpen(open) {
+        isFormOpen = open;
+        toggleFormBtn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          formEl.classList.remove('hidden');
+          formEl.classList.add('flex');
+          toggleFormIcon.style.transform = 'rotate(45deg)';
+          subjectInput.focus();
+        } else {
+          formEl.classList.add('hidden');
+          formEl.classList.remove('flex');
+          toggleFormIcon.style.transform = 'rotate(0deg)';
+          noticeEl.classList.add('hidden');
+        }
+      }
+
+      toggleFormBtn.addEventListener('click', () => {
+        setFormOpen(!isFormOpen);
+      });
+
+      // 오늘 날짜 자정 기준 반환
+      function getTodayMidnight() {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+
+      function parseLocalDate(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      }
+
+      function toISODate(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      // 디데이 계산
+      function calculateDday(dateStr) {
+        const today = getTodayMidnight();
+        const target = parseLocalDate(dateStr);
+        const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) {
+          return { diffDays: 0, label: 'D-DAY', status: 'today' };
+        } else if (diffDays > 0) {
+          return {
+            diffDays,
+            label: `D-${diffDays}`,
+            status: diffDays <= 3 ? 'urgent' : 'upcoming'
+          };
+        } else {
+          return {
+            diffDays,
+            label: `D+${Math.abs(diffDays)}`,
+            status: 'past'
+          };
+        }
+      }
+
+      // 날짜 포맷: YYYY.MM.DD (요일)
+      // 날짜 포맷: MM.DD (요일) - 좁은 열에서도 한 줄로 깔끔하게 표시
+      function formatCompactDate(dateStr) {
+        const date = parseLocalDate(dateStr);
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${m}.${d} (${days[date.getDay()]})`;
+      }
+
+      // 인라인 오류 안내 표시
+      function showNotice(text) {
+        if (noticeTimer) clearTimeout(noticeTimer);
+        noticeEl.textContent = text;
+        noticeEl.classList.remove('hidden');
+        noticeTimer = setTimeout(() => {
+          noticeEl.classList.add('hidden');
+        }, 2200);
+      }
+
+      // 테마 로드 및 적용
+      function loadTheme() {
+        try {
+          const saved = localStorage.getItem(THEME_KEY);
+          if (saved) currentTheme = saved;
+        } catch (e) {}
+        applyTheme(currentTheme);
+      }
+
+      function applyTheme(theme) {
+        currentTheme = theme;
+        if (theme === 'blue') {
+          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        themeOptionBtns.forEach((btn) => {
+          const isSelected = btn.getAttribute('data-theme-option') === theme;
+          btn.style.outline = isSelected ? '2px solid #22252A' : 'none';
+          btn.style.outlineOffset = '-2px';
+        });
+
+        try {
+          localStorage.setItem(THEME_KEY, theme);
+        } catch (e) {}
+      }
+
+      // 시험 목록 불러오기 (초기 방문 시 예시 데이터 제공)
+      function loadExams() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw !== null) {
+            exams = JSON.parse(raw);
+          } else {
+            const today = getTodayMidnight();
+            const d1 = new Date(today); d1.setDate(today.getDate() + 4);
+            const d2 = new Date(today); d2.setDate(today.getDate() + 12);
+            const d3 = new Date(today); d3.setDate(today.getDate() + 19);
+
+            exams = [
+              {
+                id: 'exam-1',
+                subject: '재무관리 중간고사',
+                date: toISODate(d1),
+                memo: '경영관 302호 · 1~5장 (공학용 계산기 지참)'
+              },
+              {
+                id: 'exam-2',
+                subject: '통계학입문 기말고사',
+                date: toISODate(d2),
+                memo: '2교시 10:30 · 가설검정~회귀분석'
+              },
+              {
+                id: 'exam-3',
+                subject: '영어회화 구술시험',
+                date: toISODate(d3),
+                memo: ''
+              }
+            ];
+            saveExams();
+          }
+        } catch (e) {
+          exams = [];
+        }
+      }
+
+      function saveExams() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(exams));
+        } catch (e) {}
+      }
+      // 인라인 수정 모드 (좁은 열에서도 깨지지 않는 3단 세로 스택 편집)
+      function startCardEdit(li, item, focusField) {
+        li.innerHTML = '';
+
+        const editContainer = document.createElement('div');
+        editContainer.className = 'flex flex-col gap-1 w-full';
+
+        // 1행: 과목명
+        const subEdit = document.createElement('input');
+        subEdit.type = 'text';
+        subEdit.value = item.subject;
+        subEdit.maxLength = 40;
+        subEdit.placeholder = '과목명';
+        subEdit.className = 'w-full h-[26px] px-2 text-[12.5px] font-semibold bg-white border border-[#B8C4D4] text-[#22252A] focus:outline-none';
+
+        // 2행: 날짜 + 저장 버튼
+        const dateRow = document.createElement('div');
+        dateRow.className = 'flex items-stretch gap-1';
+
+        const dateEdit = document.createElement('input');
+        dateEdit.type = 'date';
+        dateEdit.value = item.date;
+        dateEdit.className = 'flex-1 min-w-0 h-[25px] px-1.5 text-[11px] bg-white border border-[#B8C4D4] text-[#22252A] focus:outline-none tabular-nums';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.textContent = '완료';
+        saveBtn.className = 'px-2 shrink-0 bg-[#2C2A27] text-white text-[11px] border-none cursor-pointer';
+
+        dateRow.appendChild(dateEdit);
+        dateRow.appendChild(saveBtn);
+
+        // 3행: 메모 입력
+        const memoEdit = document.createElement('input');
+        memoEdit.type = 'text';
+        memoEdit.value = item.memo || '';
+        memoEdit.maxLength = 80;
+        memoEdit.placeholder = '메모 (장소, 범위 등)';
+        memoEdit.className = 'w-full h-[25px] px-2 text-[11px] bg-white border border-[#B8C4D4] text-[#4B525C] placeholder:text-[#A3ACB8] focus:outline-none';
+
+        editContainer.appendChild(subEdit);
+        editContainer.appendChild(dateRow);
+        editContainer.appendChild(memoEdit);
+        li.appendChild(editContainer);
+
+        let isCommitted = false;
+        const commitEdit = () => {
+          if (isCommitted) return;
+          isCommitted = true;
+
+          const newSub = subEdit.value.trim();
+          const newDate = dateEdit.value;
+          const newMemo = memoEdit.value.trim();
+
+          if (!newSub || !newDate) {
+            renderExams();
+            return;
+          }
+
+          exams = exams.map((ex) =>
+            ex.id === item.id
+              ? { ...ex, subject: newSub, date: newDate, memo: newMemo }
+              : ex
+          );
+          saveExams();
+          renderExams();
+        };
+
+        saveBtn.addEventListener('click', commitEdit);
+
+        const handleKey = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitEdit();
+          } else if (e.key === 'Escape') {
+            isCommitted = true;
+            renderExams();
+          }
+        };
+
+        subEdit.addEventListener('keydown', handleKey);
+        dateEdit.addEventListener('keydown', handleKey);
+        memoEdit.addEventListener('keydown', handleKey);
+
+        editContainer.addEventListener('focusout', () => {
+          setTimeout(() => {
+            if (!editContainer.contains(document.activeElement)) {
+              commitEdit();
+            }
+          }, 15);
+        });
+
+        if (focusField === 'memo') {
+          memoEdit.focus();
+          memoEdit.select();
+        } else if (focusField === 'date') {
+          dateEdit.focus();
+        } else {
+          subEdit.focus();
+          subEdit.select();
+        }
+      }
+
+      // 목록 렌더링 (좁은 열 최적화 2줄 컴팩트 카드)
+      function renderExams() {
+        examListEl.innerHTML = '';
+
+        const enriched = exams.map((item) => ({
+          ...item,
+          dday: calculateDday(item.date)
+        }));
+
+        // 정렬: 다가오는 시험(D-DAY 포함) 가까운 순 -> 지난 시험 하단
+        enriched.sort((a, b) => {
+          const aUpcoming = a.dday.diffDays >= 0;
+          const bUpcoming = b.dday.diffDays >= 0;
+          if (aUpcoming && !bUpcoming) return -1;
+          if (!aUpcoming && bUpcoming) return 1;
+
+          if (aUpcoming && bUpcoming) {
+            return a.dday.diffDays - b.dday.diffDays;
+          } else {
+            return b.dday.diffDays - a.dday.diffDays;
+          }
+        });
+
+        const upcomingCount = enriched.filter((x) => x.dday.diffDays >= 0).length;
+        headerCountEl.textContent = exams.length > 0 ? `${upcomingCount}개` : '';
+
+        if (enriched.length === 0) {
+          emptyStateEl.classList.remove('hidden');
+          return;
+        }
+        emptyStateEl.classList.add('hidden');
+
+        enriched.forEach((item) => {
+          const isPast = item.dday.status === 'past';
+          const isToday = item.dday.status === 'today';
+          const isUrgent = item.dday.status === 'urgent';
+
+          const li = document.createElement('li');
+          li.className = 'flex flex-col px-[10px] py-[8px] mb-[6px] transition-colors';
+          li.style.backgroundColor = isPast ? 'rgba(255, 255, 255, 0.5)' : 'var(--card-bg)';
+
+          // 1행: 직각 D-day 뱃지 + 과목명 + 우측 끝 '×' 삭제 버튼
+          const topRow = document.createElement('div');
+          topRow.className = 'flex items-center justify-between gap-1.5 min-w-0';
+
+          const titleGroup = document.createElement('div');
+          titleGroup.className = 'flex items-center gap-1.5 min-w-0 flex-1';
+
+          const badge = document.createElement('span');
+          badge.className = 'inline-flex items-center justify-center shrink-0 px-1.5 py-[1px] text-[10.5px] font-bold tabular-nums tracking-tight leading-tight';
+          badge.textContent = item.dday.label;
+
+          if (isToday) {
+            badge.style.backgroundColor = '#E05252';
+            badge.style.color = '#FFFFFF';
+          } else if (isUrgent) {
+            badge.style.backgroundColor = '#FDE8D7';
+            badge.style.color = '#B85014';
+          } else if (isPast) {
+            badge.style.backgroundColor = '#E6E8EC';
+            badge.style.color = '#888E96';
+          } else {
+            badge.style.backgroundColor = 'var(--badge-bg)';
+            badge.style.color = 'var(--badge-text)';
+          }
+
+          const subjectSpan = document.createElement('span');
+          subjectSpan.className = `text-[13px] font-semibold truncate cursor-pointer ${
+            isPast ? 'line-through text-[#8D949E]' : 'text-[#22252A] hover:underline'
+          }`;
+          subjectSpan.title = `${item.subject} (클릭하여 수정)`;
+          subjectSpan.textContent = item.subject;
+          subjectSpan.addEventListener('click', () => startCardEdit(li, item, 'subject'));
+
+          titleGroup.appendChild(badge);
+          titleGroup.appendChild(subjectSpan);
+
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.title = '삭제';
+          delBtn.ariaLabel = '삭제';
+          delBtn.className = 'shrink-0 px-0.5 bg-transparent border-none text-[#9AA1AB] hover:text-[#222222] text-[14px] leading-none cursor-pointer transition-colors';
+          delBtn.innerHTML = '&times;';
+          delBtn.addEventListener('click', () => deleteExam(item.id));
+
+          topRow.appendChild(titleGroup);
+          topRow.appendChild(delBtn);
+
+          // 2행: 날짜 + 메모 (좁은 열에서도 겹치지 않도록 유연하게 배치)
+          const bottomRow = document.createElement('div');
+          bottomRow.className = 'mt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0 text-[11px] leading-snug';
+
+          const dateSpan = document.createElement('span');
+          dateSpan.className = 'text-[#7A828E] shrink-0 tabular-nums cursor-pointer hover:text-[#22252A]';
+          dateSpan.title = '클릭하여 날짜 수정';
+          dateSpan.textContent = formatCompactDate(item.date);
+          dateSpan.addEventListener('click', () => startCardEdit(li, item, 'date'));
+
+          bottomRow.appendChild(dateSpan);
+
+          const hasMemo = Boolean(item.memo && item.memo.trim());
+          const memoSpan = document.createElement('span');
+          memoSpan.title = '클릭하여 메모 추가/수정';
+          memoSpan.addEventListener('click', () => startCardEdit(li, item, 'memo'));
+
+          if (hasMemo) {
+            memoSpan.className = `cursor-pointer break-words min-w-0 ${
+              isPast ? 'text-[#9AA1AB]' : 'text-[#5C6470] hover:text-[#22252A]'
+            }`;
+            memoSpan.textContent = `· ${item.memo}`;
+          } else {
+            memoSpan.className = 'cursor-pointer text-[#A8B0BC] hover:text-[#6C7582] transition-colors';
+            memoSpan.textContent = '+ 메모';
+          }
+
+          bottomRow.appendChild(memoSpan);
+
+          li.appendChild(topRow);
+          li.appendChild(bottomRow);
+          examListEl.appendChild(li);
+        });
+      }
+
+      // 추가 핸들러
+      formEl.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const subject = subjectInput.value.trim();
+        const date = dateInput.value;
+        const memo = memoInput.value.trim();
+
+        if (!subject) {
+          showNotice('시험 과목명을 입력해 주세요.');
+          subjectInput.focus();
+          return;
+        }
+        if (!date) {
+          showNotice('시험 날짜를 선택해 주세요.');
+          dateInput.focus();
+          return;
+        }
+
+        exams.push({
+          id: 'exam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+          subject,
+          date,
+          memo
+        });
+
+        saveExams();
+        renderExams();
+
+        subjectInput.value = '';
+        memoInput.value = '';
+        setFormOpen(false);
+      });
+
+      function deleteExam(id) {
+        exams = exams.filter((item) => item.id !== id);
+        saveExams();
+        renderExams();
+      }
+
+      // 우측 하단 팔레트 팝오버 토글
+      paletteToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        palettePopover.classList.toggle('hidden');
+      });
+
+      themeOptionBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const chosen = btn.getAttribute('data-theme-option');
+          applyTheme(chosen);
+          renderExams();
+          palettePopover.classList.add('hidden');
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!palettePopover.contains(e.target) && e.target !== paletteToggleBtn) {
+          palettePopover.classList.add('hidden');
+        }
+      });
+
+      // 초기 실행
+      dateInput.value = toISODate(getTodayMidnight());
+      loadTheme();
+      loadExams();
+      renderExams();
+    })();
+  </script>
+</body>
+</html>
